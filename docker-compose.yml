@@ -14,3 +14,4 @@ services:
       - PORT=3000
     # Optional: run as non-root
     # user: "node"
+
