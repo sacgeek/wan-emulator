@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   wan-control:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/sacgeek/wan-emulator-control:latest
     container_name: wan-emulator-control
     ports:
       - "3000:3000"

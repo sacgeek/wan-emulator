@@ -1,9 +1,11 @@
 FROM node:20-alpine
 
-# Install openssh-client for potential key operations
 RUN apk add --no-cache openssh-client
 
 WORKDIR /app
+
+# Cache bust argument - invalidates all layers below this line on each build
+ARG CACHEBUST=1
 
 # Copy backend
 COPY backend/package*.json ./backend/
