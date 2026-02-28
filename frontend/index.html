@@ -569,7 +569,7 @@
   /* Sliders */
   .param-row {
     display: grid;
-    grid-template-columns: 80px 1fr 70px;
+    grid-template-columns: 100px 1fr 70px;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
@@ -771,6 +771,99 @@
     width: 120px;
     outline: none;
   }
+
+  /* Toggle switch */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .toggle-label {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text2);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: var(--text3);
+    border-radius: 50%;
+    transition: left 0.2s, background 0.2s;
+  }
+
+  .toggle-switch input:checked + .toggle-track {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+  }
+
+  .toggle-switch input:checked + .toggle-track::after {
+    left: 19px;
+    background: var(--accent);
+  }
+
+  .sudo-pass-field {
+    margin-top: 8px;
+    animation: slideUp 0.2s ease;
+  }
+
+  /* Setup host button & status */
+  .btn-setup {
+    background: rgba(255,215,0,0.12);
+    color: var(--yellow);
+    border: 1px solid rgba(255,215,0,0.35);
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  .btn-setup:hover { background: rgba(255,215,0,0.22); }
+
+  .setup-host-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 3px;
+    margin-top: 8px;
+    display: none;
+  }
+  .setup-host-status.running  { display:block; color: var(--yellow); background: rgba(255,215,0,0.07); border: 1px solid rgba(255,215,0,0.2); }
+  .setup-host-status.ok       { display:block; color: var(--green);  background: rgba(57,211,83,0.07);  border: 1px solid rgba(57,211,83,0.2); }
+  .setup-host-status.err      { display:block; color: var(--red);    background: rgba(255,68,68,0.07);  border: 1px solid rgba(255,68,68,0.2); }
 </style>
 </head>
 <body>
@@ -888,6 +981,7 @@ function renderHostForms() {
   container.innerHTML = '';
   for (let i = 0; i < hostCount; i++) {
     const saved = hosts[i] || {};
+    const samePw = saved.sudoSameAsPassword !== false; // default true
     container.innerHTML += `
       <div class="host-block">
         <div class="host-block-title">
@@ -910,8 +1004,23 @@ function renderHostForms() {
             <input type="text" id="h${i}-user" placeholder="ubuntu" value="${saved.username||''}">
           </div>
           <div class="form-group" style="margin:0">
-            <label>Password</label>
+            <label>SSH Password</label>
             <input type="password" id="h${i}-pass" placeholder="••••••••" value="${saved.password||''}">
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin-bottom:12px;">
+          <div class="toggle-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="h${i}-sudo-same" ${samePw ? 'checked' : ''} onchange="toggleSudoField(${i})">
+              <span class="toggle-track"></span>
+            </label>
+            <span class="toggle-label" onclick="document.getElementById('h${i}-sudo-same').click()">
+              Sudo password same as SSH password
+            </span>
+          </div>
+          <div class="sudo-pass-field" id="h${i}-sudo-field" style="display:${samePw ? 'none' : 'block'}">
+            <label>Sudo Password</label>
+            <input type="password" id="h${i}-sudo-pass" placeholder="sudo password" value="${saved.sudoPassword||''}">
           </div>
         </div>
         <div class="form-group" style="margin-bottom:0">
@@ -923,6 +1032,13 @@ function renderHostForms() {
   }
 }
 
+function toggleSudoField(i) {
+  const checked = document.getElementById(`h${i}-sudo-same`).checked;
+  const field = document.getElementById(`h${i}-sudo-field`);
+  field.style.display = checked ? 'none' : 'block';
+  if (checked) document.getElementById(`h${i}-sudo-pass`).value = '';
+}
+
 renderHostForms();
 
 async function connectAll() {
@@ -932,12 +1048,17 @@ async function connectAll() {
   
   hosts = [];
   for (let i = 0; i < hostCount; i++) {
+    const sshPass = document.getElementById(`h${i}-pass`).value;
+    const sudoSame = document.getElementById(`h${i}-sudo-same`).checked;
+    const sudoPass = sudoSame ? sshPass : document.getElementById(`h${i}-sudo-pass`).value;
     hosts.push({
       id: `host-${i}`,
       host: document.getElementById(`h${i}-host`).value.trim(),
       port: parseInt(document.getElementById(`h${i}-port`).value) || 22,
       username: document.getElementById(`h${i}-user`).value.trim(),
-      password: document.getElementById(`h${i}-pass`).value,
+      password: sshPass,
+      sudoPassword: sudoPass,
+      sudoSameAsPassword: sudoSame,
       label: document.getElementById(`h${i}-label`).value.trim()
     });
   }
@@ -1054,8 +1175,10 @@ function renderDashboard() {
           <div class="host-label">${escHtml(hostLabel)}</div>
           <div class="host-ip-badge">${escHtml(h.host)}</div>
           <div class="conn-indicator ${statusClass}">${statusText}</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadInterfaces('${h.id}').then(renderDashboard)" style="margin-left:8px">↻</button>
+          <button class="btn btn-setup btn-sm" onclick="setupHost('${h.id}')" title="Configure passwordless sudo for tc on this host">⚙ Setup Host</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadInterfaces('${h.id}').then(renderDashboard)" style="margin-left:4px">↻</button>
         </div>
+        <div class="setup-host-status" id="setup-status-${h.id}"></div>
         ${collapsedSection}
         ${visibleSection}
       </div>
@@ -1110,7 +1233,7 @@ function renderParam(hostId, ifaceName, param, label, value, min, max, step, uni
   const v = value || 0;
   return `
     <div class="param-row">
-      <span class="param-label">${label}</span>
+      <span class="param-label">${label} <span style="color:var(--text3);font-weight:400">(${unit})</span></span>
       <input type="range" class="${cls}" id="range-${safeId}" 
              min="${min}" max="${max}" step="${step}" value="${v}"
              oninput="syncParam('${safeId}', this.value)">
@@ -1292,6 +1415,36 @@ document.getElementById('label-modal-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveLabelModal();
   if (e.key === 'Escape') closeLabelModal();
 });
+
+async function setupHost(hostId) {
+  const h = hosts.find(x => x.id === hostId);
+  if (!h) return;
+
+  const statusEl = document.getElementById(`setup-status-${hostId}`);
+  statusEl.className = 'setup-host-status running';
+  statusEl.textContent = '⏳ Configuring passwordless sudo for tc... this may take a moment.';
+
+  try {
+    const res = await apiFetch('/api/setup-sudo', 'POST', {
+      id: hostId,
+      sudoPassword: h.sudoPassword
+    });
+
+    if (res.success) {
+      statusEl.className = 'setup-host-status ok';
+      statusEl.textContent = `✓ ${res.message}`;
+      toast(`${h.label || h.host}: sudo configured successfully`, 'success');
+    } else {
+      statusEl.className = 'setup-host-status err';
+      statusEl.textContent = `✗ ${res.error}`;
+      toast(`Setup failed: ${res.error}`, 'error');
+    }
+  } catch (e) {
+    statusEl.className = 'setup-host-status err';
+    statusEl.textContent = `✗ ${e.message}`;
+    toast(`Setup failed: ${e.message}`, 'error');
+  }
+}
 
 function showSetup() {
   document.getElementById('dashboard').style.display = 'none';

@@ -12,6 +12,3 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3000
-    # Optional: run as non-root
-    # user: "node"
-

@@ -185,7 +185,53 @@ app.post('/api/apply', async (req, res) => {
   }
 });
 
-// Clear tc settings on an interface
+// Setup passwordless sudo for tc on a host
+app.post('/api/setup-sudo', async (req, res) => {
+  const { id, sudoPassword } = req.body;
+  const conn = connections[id];
+  if (!conn) return res.status(404).json({ error: 'Not connected' });
+  if (!sudoPassword) return res.status(400).json({ error: 'No sudo password provided' });
+
+  try {
+    // Detect username and tc path
+    const { stdout: whoami } = await sshExec(conn, 'whoami');
+    const username = whoami.trim();
+
+    const { stdout: tcPath } = await sshExec(conn, 'which tc');
+    const tc = tcPath.trim();
+    if (!tc) return res.status(500).json({ error: 'tc binary not found. Is iproute2 installed?' });
+
+    // Write the sudoers file using sudo -S (password via stdin)
+    const sudoersLine = `${username} ALL=(ALL) NOPASSWD: ${tc}`;
+    const sudoersFile = '/etc/sudoers.d/tc-nopasswd';
+
+    // Use printf to write the file and chmod it, piping the password to sudo -S
+    const writeCmd = `echo '${sudoPassword}' | sudo -S bash -c "printf '%s\\n' '${sudoersLine}' > ${sudoersFile} && chmod 440 ${sudoersFile} && chown root:root ${sudoersFile}"`;
+    const writeResult = await sshExec(conn, writeCmd);
+
+    if (writeResult.stderr && writeResult.stderr.includes('incorrect password')) {
+      return res.status(403).json({ error: 'Incorrect sudo password' });
+    }
+    if (writeResult.code !== 0 && writeResult.stderr && !writeResult.stderr.includes('password for')) {
+      return res.status(500).json({ error: `Failed to write sudoers: ${writeResult.stderr.trim()}` });
+    }
+
+    // Verify it works — sudo -n should now succeed without a password
+    const verifyResult = await sshExec(conn, `sudo -n ${tc} qdisc show 2>&1`);
+    if (verifyResult.stderr && verifyResult.stderr.includes('password is required')) {
+      return res.status(500).json({ error: 'Sudoers rule was written but verification failed. Check that visudo accepts the file.' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Passwordless sudo configured for '${username}' using ${tc}` 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.post('/api/clear', async (req, res) => {
   const { id, iface } = req.body;
   const conn = connections[id];
