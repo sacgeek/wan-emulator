@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WAN Emulator Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0c0f;
@@ -22,12 +22,12 @@
     --orange: #ff8c00;
     --red: #ff4444;
     --yellow: #ffd700;
-    --text: #c9d1d9;
-    --text2: #8b949e;
-    --text3: #495866;
-    --mono: 'Share Tech Mono', monospace;
-    --sans: 'Barlow', sans-serif;
-    --cond: 'Barlow Condensed', sans-serif;
+    --text: #e6edf3;
+    --text2: #adbac7;
+    --text3: #768390;
+    --mono: 'Source Code Pro', 'Courier New', monospace;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --cond: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,7 +36,8 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--sans);
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 1.5;
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -86,27 +87,28 @@
   .logo-icon svg { width: 32px; height: 32px; }
 
   .logo-text {
-    font-family: var(--cond);
-    font-weight: 900;
-    font-size: 20px;
-    letter-spacing: 0.15em;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.05em;
     color: var(--accent);
     text-transform: uppercase;
   }
 
   .logo-sub {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text3);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
   }
 
   .header-status {
     display: flex;
     align-items: center;
     gap: 16px;
-    font-family: var(--mono);
-    font-size: 11px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
     color: var(--text3);
   }
 
@@ -155,10 +157,10 @@
   }
 
   .panel-title {
-    font-family: var(--cond);
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.1em;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--accent);
   }
@@ -206,21 +208,21 @@
   }
 
   .setup-title {
-    font-family: var(--cond);
-    font-weight: 900;
-    font-size: 28px;
-    letter-spacing: 0.08em;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 0.03em;
     color: var(--accent);
     text-transform: uppercase;
-    line-height: 1;
+    line-height: 1.2;
   }
 
   .setup-subtitle {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text3);
     margin-top: 6px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
   }
 
   .setup-body { padding: 24px 28px; }
@@ -228,10 +230,10 @@
   /* Form elements */
   label {
     display: block;
-    font-family: var(--cond);
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.12em;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text3);
     margin-bottom: 6px;
@@ -241,8 +243,8 @@
     background: var(--bg);
     border: 1px solid var(--border2);
     color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
+    font-family: var(--sans);
+    font-size: 14px;
     padding: 8px 12px;
     border-radius: 3px;
     width: 100%;
@@ -280,10 +282,10 @@
   }
 
   .host-block-title {
-    font-family: var(--cond);
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 0.1em;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
     color: var(--accent);
     text-transform: uppercase;
     margin-bottom: 12px;
@@ -307,10 +309,10 @@
 
   /* Buttons */
   .btn {
-    font-family: var(--cond);
-    font-weight: 700;
+    font-family: var(--sans);
+    font-weight: 600;
     font-size: 13px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     padding: 9px 20px;
     border: none;
@@ -384,9 +386,9 @@
     background: var(--bg);
     border: 1px solid var(--border2);
     color: var(--text2);
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
     border-radius: 3px;
     cursor: pointer;
     display: flex;
@@ -415,17 +417,17 @@
   }
 
   .host-label {
-    font-family: var(--cond);
-    font-weight: 900;
-    font-size: 16px;
-    letter-spacing: 0.1em;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text);
   }
 
   .host-ip-badge {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--accent);
     background: var(--accent-dim2);
     border: 1px solid rgba(0,212,255,0.2);
@@ -438,8 +440,9 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-family: var(--mono);
-    font-size: 11px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
   }
 
   .conn-indicator.connected { color: var(--green); }
@@ -513,7 +516,7 @@
   .iface-name {
     font-family: var(--mono);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text);
     white-space: nowrap;
     overflow: hidden;
@@ -522,7 +525,7 @@
 
   .iface-ipv4 {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 11px;
     color: var(--accent);
     white-space: nowrap;
     overflow: hidden;
@@ -532,7 +535,7 @@
 
   .iface-ipv6 {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 11px;
     color: #7a9abf;
     white-space: nowrap;
     overflow: hidden;
@@ -541,11 +544,11 @@
   .iface-ipv6.empty { color: var(--text3); font-style: italic; }
 
   .iface-custom-label {
-    font-family: var(--cond);
-    font-size: 11px;
+    font-family: var(--sans);
+    font-size: 12px;
     color: var(--yellow);
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: pointer;
     padding: 1px 4px;
     border-radius: 2px;
@@ -576,16 +579,17 @@
   }
 
   .param-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: none;
+    letter-spacing: 0;
   }
 
   .param-unit {
-    font-family: var(--mono);
-    font-size: 10px;
+    font-family: var(--sans);
+    font-size: 11px;
     color: var(--text3);
   }
 
@@ -621,7 +625,7 @@
     border: 1px solid var(--border);
     color: var(--text);
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 13px;
     padding: 3px 6px;
     border-radius: 2px;
     width: 100%;
@@ -640,8 +644,9 @@
   }
 
   .apply-status {
-    font-family: var(--mono);
-    font-size: 10px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
     margin-left: auto;
     padding: 2px 6px;
     border-radius: 2px;
@@ -663,10 +668,10 @@
   }
 
   .toolbar-title {
-    font-family: var(--cond);
-    font-weight: 700;
+    font-family: var(--sans);
+    font-weight: 600;
     font-size: 13px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text2);
     flex: 1;
@@ -689,8 +694,9 @@
     border-left: 3px solid var(--accent);
     padding: 10px 16px;
     border-radius: 3px;
-    font-family: var(--mono);
-    font-size: 12px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
     color: var(--text);
     animation: toastIn 0.3s ease;
     max-width: 320px;
@@ -736,10 +742,10 @@
     animation: slideUp 0.3s ease;
   }
   .modal-title {
-    font-family: var(--cond);
+    font-family: var(--sans);
     font-weight: 700;
     font-size: 14px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 14px;
@@ -781,11 +787,11 @@
   }
 
   .toggle-label {
-    font-family: var(--cond);
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
     color: var(--text2);
     cursor: pointer;
     user-select: none;
@@ -848,15 +854,16 @@
     background: rgba(255,215,0,0.12);
     color: var(--yellow);
     border: 1px solid rgba(255,215,0,0.35);
-    font-size: 11px;
+    font-size: 12px;
     padding: 5px 10px;
   }
   .btn-setup:hover { background: rgba(255,215,0,0.22); }
 
   .setup-host-status {
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 6px 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
     border-radius: 3px;
     margin-top: 8px;
     display: none;
@@ -864,6 +871,51 @@
   .setup-host-status.running  { display:block; color: var(--yellow); background: rgba(255,215,0,0.07); border: 1px solid rgba(255,215,0,0.2); }
   .setup-host-status.ok       { display:block; color: var(--green);  background: rgba(57,211,83,0.07);  border: 1px solid rgba(57,211,83,0.2); }
   .setup-host-status.err      { display:block; color: var(--red);    background: rgba(255,68,68,0.07);  border: 1px solid rgba(255,68,68,0.2); }
+
+  /* ── Drag and Drop ──────────────────────────────────────────────────── */
+  .iface-card[draggable="true"] {
+    cursor: grab;
+  }
+  .iface-card[draggable="true"]:active {
+    cursor: grabbing;
+  }
+  .iface-card.drag-handle-active {
+    cursor: grabbing;
+  }
+  .drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    flex-shrink: 0;
+    color: var(--text3);
+    cursor: grab;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+    padding-top: 2px;
+    align-self: center;
+  }
+  .iface-card:hover .drag-handle { opacity: 0.8; }
+  .drag-handle:hover { opacity: 1 !important; color: var(--accent); }
+
+  .iface-card.dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--accent) !important;
+  }
+  .iface-card.drag-over {
+    border-color: var(--accent) !important;
+    background: var(--accent-dim2);
+    transform: scale(1.01);
+  }
+  .drag-drop-hint {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text3);
+    padding: 4px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 </style>
 </head>
 <body>
@@ -983,7 +1035,8 @@ async function saveSettings() {
     state: Object.fromEntries(
       Object.entries(state).map(([hostId, s]) => [hostId, {
         hidden: Array.from(s.hidden),
-        labels: s.labels
+        labels: s.labels,
+        ifaceOrder: s.interfaces.map(i => i.name)
       }])
     )
   };
@@ -1189,6 +1242,7 @@ async function connectAll() {
       interfaces: [],
       hidden: new Set(prev.hidden || []),
       labels: prev.labels || {},
+      ifaceOrder: prev.ifaceOrder || [],
       status: 'connected'
     };
   }
@@ -1218,8 +1272,17 @@ async function loadInterfaces(hostId) {
   try {
     const res = await apiFetch(`/api/interfaces/${hostId}`, 'GET');
     if (state[hostId]) {
-      // Preserve existing hidden/labels
-      state[hostId].interfaces = res.interfaces;
+      let ifaces = res.interfaces;
+      // Restore saved order if available
+      const savedOrder = state[hostId].ifaceOrder;
+      if (savedOrder && savedOrder.length > 0) {
+        const ordered = savedOrder
+          .map(name => ifaces.find(i => i.name === name))
+          .filter(Boolean);
+        const newOnes = ifaces.filter(i => !savedOrder.includes(i.name));
+        ifaces = [...ordered, ...newOnes];
+      }
+      state[hostId].interfaces = ifaces;
       state[hostId].status = 'connected';
     }
   } catch (e) {
@@ -1295,8 +1358,19 @@ function renderIfaceCard(hostId, iface, collapsed, label) {
   const maxBw = Math.max(100000, (iface.bandwidth || 0) * 2);
 
   return `
-    <div class="iface-card ${collapsedClass}" id="card-${hostId}-${iface.name}">
+    <div class="iface-card ${collapsedClass}" id="card-${hostId}-${iface.name}"
+         draggable="true"
+         data-host="${hostId}" data-iface="${iface.name}"
+         ondragstart="onDragStart(event)" ondragover="onDragOver(event)"
+         ondrop="onDrop(event)" ondragend="onDragEnd(event)" ondragleave="onDragLeave(event)">
       <div class="iface-header">
+        <div class="drag-handle" title="Drag to reorder">
+          <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+            <circle cx="4" cy="3" r="1.5"/><circle cx="8" cy="3" r="1.5"/>
+            <circle cx="4" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/>
+            <circle cx="4" cy="13" r="1.5"/><circle cx="8" cy="13" r="1.5"/>
+          </svg>
+        </div>
         <div class="iface-header-labels">
           <span class="iface-name">${escHtml(iface.name)}</span>
           <span class="iface-ipv4 ${ipv4Text ? '' : 'empty'}">${ipv4Text || 'no IPv4'}</span>
@@ -1304,7 +1378,7 @@ function renderIfaceCard(hostId, iface, collapsed, label) {
           ${labelHtml}
         </div>
         <div class="iface-actions">
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;white-space:nowrap;" title="${collapsed ? 'Expand interface' : 'Collapse interface'}" onclick="toggleHide('${hostId}','${iface.name}')">
+          <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;white-space:nowrap;" title="${collapsed ? 'Expand interface' : 'Collapse interface'}" onclick="toggleHide('${hostId}','${iface.name}')">
             ${collapsed ? '👁 Show' : '⊘ Hide'}
           </button>
         </div>
@@ -1513,6 +1587,78 @@ document.getElementById('label-modal-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveLabelModal();
   if (e.key === 'Escape') closeLabelModal();
 });
+
+// ── Drag and Drop ──────────────────────────────────────────────────────────
+
+let dragSrc = null; // { hostId, ifaceName }
+
+function onDragStart(e) {
+  const card = e.currentTarget;
+  dragSrc = { hostId: card.dataset.host, ifaceName: card.dataset.iface };
+  card.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', card.id);
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.iface-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+  dragSrc = null;
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const target = e.currentTarget;
+  if (dragSrc && target.dataset.iface !== dragSrc.ifaceName && target.dataset.host === dragSrc.hostId) {
+    document.querySelectorAll('.iface-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  }
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const target = e.currentTarget;
+  target.classList.remove('drag-over');
+
+  if (!dragSrc) return;
+  if (target.dataset.iface === dragSrc.ifaceName) return;
+  if (target.dataset.host !== dragSrc.hostId) return; // no cross-host drag
+
+  const hostId = dragSrc.hostId;
+  const s = state[hostId];
+  if (!s) return;
+
+  // Reorder s.interfaces array
+  const fromIdx = s.interfaces.findIndex(i => i.name === dragSrc.ifaceName);
+  const toIdx   = s.interfaces.findIndex(i => i.name === target.dataset.iface);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  const [moved] = s.interfaces.splice(fromIdx, 1);
+  s.interfaces.splice(toIdx, 0, moved);
+
+  // Re-render just this host's grid
+  const collapsedContainer = document.getElementById(`iface-collapsed-${hostId}`);
+  const mainGrid = document.getElementById(`iface-grid-${hostId}`);
+
+  const hiddenIfaces  = s.interfaces.filter(i => s.hidden.has(i.name));
+  const visibleIfaces = s.interfaces.filter(i => !s.hidden.has(i.name));
+
+  if (collapsedContainer) {
+    collapsedContainer.innerHTML = hiddenIfaces.map(i => renderIfaceCard(hostId, i, true, s.labels[i.name] || '')).join('');
+  }
+  if (mainGrid) {
+    mainGrid.innerHTML = visibleIfaces.length
+      ? visibleIfaces.map(i => renderIfaceCard(hostId, i, false, s.labels[i.name] || '')).join('')
+      : '<div class="no-iface-placeholder" style="color:var(--text3);font-family:var(--sans);font-size:13px;padding:12px">No visible interfaces</div>';
+  }
+
+  saveSettings();
+}
 
 async function setupHost(hostId) {
   const h = hosts.find(x => x.id === hostId);
