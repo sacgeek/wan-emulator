@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   wan-control:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wan-emulator-control:latest
     container_name: wan-emulator-control
     ports:
       - "3000:3000"
