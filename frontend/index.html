@@ -1062,6 +1062,7 @@ restoreSettings().finally(() => {
   populateRestoredForms();
 });
 
+function renderHostForms() {
   const container = document.getElementById('host-forms');
   container.innerHTML = '';
   for (let i = 0; i < hostCount; i++) {
@@ -1123,8 +1124,6 @@ function toggleSudoField(i) {
   field.style.display = checked ? 'none' : 'block';
   if (checked) document.getElementById(`h${i}-sudo-pass`).value = '';
 }
-
-renderHostForms();
 
 async function connectAll() {
   const btn = document.getElementById('connect-btn');
