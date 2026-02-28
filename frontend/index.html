@@ -453,6 +453,14 @@
     gap: 12px;
   }
 
+  /* Hidden/collapsed cards row - sits above the main grid */
+  .iface-grid-collapsed {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
   .iface-card {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -463,17 +471,43 @@
   }
 
   .iface-card:hover { border-color: var(--border2); }
-  .iface-card.hidden-iface { opacity: 0.35; }
   .iface-card.applying { border-color: var(--accent); }
   .iface-card.applied { border-color: var(--green); }
+
+  /* Collapsed card - only shows the header info strip */
+  .iface-card.collapsed {
+    background: var(--bg3);
+    border-color: var(--border);
+    opacity: 0.7;
+    min-width: 200px;
+    max-width: 260px;
+  }
+  .iface-card.collapsed:hover { opacity: 1; border-color: var(--border2); }
+  .iface-card.collapsed .iface-body,
+  .iface-card.collapsed .iface-footer {
+    display: none;
+  }
 
   .iface-header {
     background: var(--bg3);
     border-bottom: 1px solid var(--border);
     padding: 8px 12px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
+  }
+
+  /* When collapsed, no border-bottom needed since body is hidden */
+  .iface-card.collapsed .iface-header {
+    border-bottom: none;
+  }
+
+  .iface-header-labels {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .iface-name {
@@ -481,38 +515,53 @@
     font-size: 13px;
     font-weight: 700;
     color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .iface-ip {
+  .iface-ipv4 {
     font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text3);
+    font-size: 10px;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  .iface-ipv4.empty { color: var(--text3); font-style: italic; }
+
+  .iface-ipv6 {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #7a9abf;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .iface-ipv6.empty { color: var(--text3); font-style: italic; }
 
   .iface-custom-label {
     font-family: var(--cond);
-    font-size: 12px;
-    color: var(--accent);
+    font-size: 11px;
+    color: var(--yellow);
     font-weight: 700;
     letter-spacing: 0.05em;
-    flex: 1;
-    text-align: right;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 1px 4px;
     border-radius: 2px;
     transition: background 0.15s;
-    max-width: 120px;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
-  .iface-custom-label:hover { background: var(--accent-dim); }
-  .iface-custom-label.empty { color: var(--text3); font-style: italic; }
+  .iface-custom-label:hover { background: rgba(255,215,0,0.1); }
+  .iface-custom-label.empty { color: var(--text3); font-style: italic; font-weight: 400; }
 
   .iface-actions {
     display: flex;
+    flex-direction: column;
     gap: 4px;
-    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .iface-body { padding: 12px; }
@@ -974,12 +1023,30 @@ function renderDashboard() {
     const statusClass = s.status === 'connected' ? 'connected' : 'disconnected';
     const statusText = s.status === 'connected' ? '● CONNECTED' : '● DISCONNECTED';
 
-    let ifacesHtml = '';
-    for (const iface of s.interfaces) {
-      const hidden = s.hidden.has(iface.name);
+    // Split into hidden (collapsed) and visible
+    const hiddenIfaces = s.interfaces.filter(iface => s.hidden.has(iface.name));
+    const visibleIfaces = s.interfaces.filter(iface => !s.hidden.has(iface.name));
+
+    let collapsedHtml = '';
+    for (const iface of hiddenIfaces) {
       const label = s.labels[iface.name] || '';
-      ifacesHtml += renderIfaceCard(h.id, iface, hidden, label);
+      collapsedHtml += renderIfaceCard(h.id, iface, true, label);
     }
+
+    let visibleHtml = '';
+    for (const iface of visibleIfaces) {
+      const label = s.labels[iface.name] || '';
+      visibleHtml += renderIfaceCard(h.id, iface, false, label);
+    }
+
+    const collapsedSection = hiddenIfaces.length > 0
+      ? `<div class="iface-grid-collapsed" id="iface-collapsed-${h.id}">${collapsedHtml}</div>`
+      : `<div class="iface-grid-collapsed" id="iface-collapsed-${h.id}"></div>`;
+
+    const visibleSection = `
+      <div class="iface-grid" id="iface-grid-${h.id}">
+        ${visibleHtml || '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:12px">No visible interfaces</div>'}
+      </div>`;
 
     container.innerHTML += `
       <div class="host-section" id="host-section-${h.id}">
@@ -989,33 +1056,37 @@ function renderDashboard() {
           <div class="conn-indicator ${statusClass}">${statusText}</div>
           <button class="btn btn-ghost btn-sm" onclick="loadInterfaces('${h.id}').then(renderDashboard)" style="margin-left:8px">↻</button>
         </div>
-        <div class="iface-grid" id="iface-grid-${h.id}">
-          ${ifacesHtml || '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:12px">No interfaces found</div>'}
-        </div>
+        ${collapsedSection}
+        ${visibleSection}
       </div>
     `;
   }
 }
 
-function renderIfaceCard(hostId, iface, hidden, label) {
-  const labelDisplay = label 
+function renderIfaceCard(hostId, iface, collapsed, label) {
+  const collapsedClass = collapsed ? 'collapsed' : '';
+
+  const ipv4Text = iface.ipv4 || '';
+  const ipv6Text = iface.ipv6 || '';
+
+  const labelHtml = label
     ? `<span class="iface-custom-label" title="Click to edit label" onclick="openLabelModal('${hostId}','${escHtml(iface.name)}')">${escHtml(label)}</span>`
     : `<span class="iface-custom-label empty" title="Click to add label" onclick="openLabelModal('${hostId}','${escHtml(iface.name)}')">[add label]</span>`;
 
-  const hiddenClass = hidden ? 'hidden-iface' : '';
-
-  // Param ranges
   const maxBw = Math.max(100000, (iface.bandwidth || 0) * 2);
 
   return `
-    <div class="iface-card ${hiddenClass}" id="card-${hostId}-${iface.name}">
+    <div class="iface-card ${collapsedClass}" id="card-${hostId}-${iface.name}">
       <div class="iface-header">
-        <span class="iface-name">${escHtml(iface.name)}</span>
-        <span class="iface-ip">${escHtml(iface.ip || '')}</span>
-        ${labelDisplay}
+        <div class="iface-header-labels">
+          <span class="iface-name">${escHtml(iface.name)}</span>
+          <span class="iface-ipv4 ${ipv4Text ? '' : 'empty'}">${ipv4Text || 'no IPv4'}</span>
+          <span class="iface-ipv6 ${ipv6Text ? '' : 'empty'}">${ipv6Text || 'no IPv6'}</span>
+          ${labelHtml}
+        </div>
         <div class="iface-actions">
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;" title="${hidden ? 'Show' : 'Hide'}" onclick="toggleHide('${hostId}','${iface.name}')">
-            ${hidden ? '👁 Show' : '⊘ Hide'}
+          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;white-space:nowrap;" title="${collapsed ? 'Expand interface' : 'Collapse interface'}" onclick="toggleHide('${hostId}','${iface.name}')">
+            ${collapsed ? '👁 Show' : '⊘ Hide'}
           </button>
         </div>
       </div>
@@ -1146,13 +1217,39 @@ async function clearAllInterfaces() {
 function toggleHide(hostId, ifaceName) {
   const s = state[hostId];
   if (!s) return;
-  if (s.hidden.has(ifaceName)) s.hidden.delete(ifaceName);
+
+  const wasHidden = s.hidden.has(ifaceName);
+  if (wasHidden) s.hidden.delete(ifaceName);
   else s.hidden.add(ifaceName);
-  const card = document.getElementById(`card-${hostId}-${ifaceName}`);
-  if (card) {
-    card.classList.toggle('hidden-iface', s.hidden.has(ifaceName));
-    const btn = card.querySelector('.iface-actions button');
-    if (btn) btn.innerHTML = s.hidden.has(ifaceName) ? '👁 Show' : '⊘ Hide';
+
+  const isNowHidden = s.hidden.has(ifaceName);
+  const iface = s.interfaces.find(i => i.name === ifaceName);
+  if (!iface) return;
+
+  const label = s.labels[ifaceName] || '';
+  const newCardHtml = renderIfaceCard(hostId, iface, isNowHidden, label);
+
+  // Remove existing card from wherever it is
+  const existingCard = document.getElementById(`card-${hostId}-${ifaceName}`);
+  if (existingCard) existingCard.remove();
+
+  // Insert into the right container
+  const targetId = isNowHidden ? `iface-collapsed-${hostId}` : `iface-grid-${hostId}`;
+  const targetContainer = document.getElementById(targetId);
+  if (targetContainer) {
+    targetContainer.insertAdjacentHTML('beforeend', newCardHtml);
+  }
+
+  // Update the "no visible interfaces" placeholder in the main grid
+  const mainGrid = document.getElementById(`iface-grid-${hostId}`);
+  if (mainGrid) {
+    const visibleCards = mainGrid.querySelectorAll('.iface-card').length;
+    const placeholder = mainGrid.querySelector('.no-iface-placeholder');
+    if (visibleCards === 0 && !placeholder) {
+      mainGrid.insertAdjacentHTML('beforeend', '<div class="no-iface-placeholder" style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:12px">No visible interfaces</div>');
+    } else if (visibleCards > 0 && placeholder) {
+      placeholder.remove();
+    }
   }
 }
 
@@ -1171,13 +1268,15 @@ function saveLabelModal() {
   const newLabel = document.getElementById('label-modal-input').value.trim();
   if (state[hostId]) {
     state[hostId].labels[ifaceName] = newLabel;
-    // Update the label span in DOM
+    // Update the label span in the card header
     const card = document.getElementById(`card-${hostId}-${ifaceName}`);
     if (card) {
       const span = card.querySelector('.iface-custom-label');
       if (span) {
         span.textContent = newLabel || '[add label]';
         span.className = 'iface-custom-label' + (newLabel ? '' : ' empty');
+        // Update onclick for new label state
+        span.title = newLabel ? 'Click to edit label' : 'Click to add label';
       }
     }
   }

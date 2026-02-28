@@ -78,17 +78,19 @@ app.get('/api/interfaces/:id', async (req, res) => {
   try {
     // Get interface names, IPs, and current tc settings
     const { stdout: ifOut } = await sshExec(conn, 
-      `ip -o addr show | awk '{print $2, $4}' | grep -v '^lo '`
+      `ip -o addr show | awk '{print $2, $3, $4}' | grep -v '^lo '`
     );
 
     const ifaceMap = {};
     ifOut.trim().split('\n').forEach(line => {
       const parts = line.trim().split(/\s+/);
-      if (parts.length >= 2) {
+      if (parts.length >= 3) {
         const name = parts[0];
-        const ip = parts[1].split('/')[0];
-        if (!ifaceMap[name]) ifaceMap[name] = { name, ips: [] };
-        ifaceMap[name].ips.push(ip);
+        const family = parts[1]; // 'inet' or 'inet6'
+        const addr = parts[2].split('/')[0];
+        if (!ifaceMap[name]) ifaceMap[name] = { name, ipv4: [], ipv6: [] };
+        if (family === 'inet') ifaceMap[name].ipv4.push(addr);
+        else if (family === 'inet6') ifaceMap[name].ipv6.push(addr);
       }
     });
 
@@ -103,7 +105,8 @@ app.get('/api/interfaces/:id', async (req, res) => {
       const tc = tcMap[iface.name] || {};
       return {
         name: iface.name,
-        ip: iface.ips.join(', '),
+        ipv4: iface.ipv4.join(', '),
+        ipv6: iface.ipv6.filter(a => !a.startsWith('fe80')).join(', '), // skip link-local
         loss: tc.loss || 0,
         latency: tc.latency || 0,
         jitter: tc.jitter || 0,
