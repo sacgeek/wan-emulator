@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAN Emulator Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #0f1217;
+    --bg3: #161b22;
+    --bg4: #1c2330;
+    --border: #2a3441;
+    --border2: #3a4a5c;
+    --accent: #00d4ff;
+    --accent2: #0099bb;
+    --accent-dim: rgba(0,212,255,0.12);
+    --accent-dim2: rgba(0,212,255,0.05);
+    --green: #39d353;
+    --orange: #ff8c00;
+    --red: #ff4444;
+    --yellow: #ffd700;
+    --text: #c9d1d9;
+    --text2: #8b949e;
+    --text3: #495866;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Header */
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    position: relative;
+  }
+
+  .logo-icon svg { width: 32px; height: 32px; }
+
+  .logo-text {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: 20px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+    animation: pulse-dim 3s infinite;
+  }
+  .status-dot.active { background: var(--green); animation: pulse-green 2s infinite; }
+  .status-dot.error { background: var(--red); animation: none; }
+
+  @keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(57,211,83,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(57,211,83,0); }
+  }
+  @keyframes pulse-dim {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Main layout */
+  main {
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* Panels */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .panel-title {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .panel-body { padding: 16px; }
+
+  /* Setup screen */
+  #setup-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+    padding: 24px;
+  }
+
+  .setup-card {
+    width: 100%;
+    max-width: 680px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .setup-header {
+    background: linear-gradient(135deg, #0f1a24 0%, #0a1520 100%);
+    border-bottom: 1px solid var(--border2);
+    padding: 28px 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .setup-header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+  }
+
+  .setup-title {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .setup-subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .setup-body { padding: 24px 28px; }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="password"], input[type="number"], select {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 3px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+  }
+
+  input::placeholder { color: var(--text3); }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .form-row.three { grid-template-columns: 1fr 1fr 80px; }
+
+  .form-group { margin-bottom: 12px; }
+
+  .host-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+    animation: slideUp 0.3s ease;
+  }
+
+  .host-block-title {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .host-num {
+    background: var(--accent);
+    color: #000;
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 11px;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 9px 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #33ddff; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-secondary:hover { background: var(--accent-dim); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid rgba(255,68,68,0.4);
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  .btn-danger:hover { background: rgba(255,68,68,0.1); }
+
+  .btn-ghost {
+    background: var(--bg4);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text2); }
+
+  .btn-green {
+    background: var(--green);
+    color: #000;
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  .btn-green:hover { filter: brightness(1.1); }
+
+  .btn-sm { font-size: 11px; padding: 5px 12px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  /* Host count selector */
+  .count-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .count-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .count-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .count-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* Main dashboard */
+  #dashboard { display: none; }
+
+  .host-section {
+    margin-bottom: 24px;
+    animation: slideUp 0.4s ease;
+  }
+
+  .host-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .host-label {
+    font-family: var(--cond);
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .host-ip-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-dim2);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  .conn-indicator {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .conn-indicator.connected { color: var(--green); }
+  .conn-indicator.disconnected { color: var(--red); }
+  .conn-indicator.connecting { color: var(--yellow); }
+
+  /* Interface grid */
+  .iface-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+
+  .iface-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+
+  .iface-card:hover { border-color: var(--border2); }
+  .iface-card.hidden-iface { opacity: 0.35; }
+  .iface-card.applying { border-color: var(--accent); }
+  .iface-card.applied { border-color: var(--green); }
+
+  .iface-header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .iface-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .iface-ip {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .iface-custom-label {
+    font-family: var(--cond);
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    flex: 1;
+    text-align: right;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 2px;
+    transition: background 0.15s;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .iface-custom-label:hover { background: var(--accent-dim); }
+  .iface-custom-label.empty { color: var(--text3); font-style: italic; }
+
+  .iface-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .iface-body { padding: 12px; }
+
+  /* Sliders */
+  .param-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .param-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .param-unit {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--bg4);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  input[type="range"].loss::-webkit-slider-thumb { background: var(--red); }
+  input[type="range"].latency::-webkit-slider-thumb { background: var(--orange); }
+  input[type="range"].jitter::-webkit-slider-thumb { background: var(--yellow); }
+  input[type="range"].bandwidth::-webkit-slider-thumb { background: var(--green); }
+
+  /* Number input inline */
+  .param-value-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 2px;
+    width: 100%;
+    text-align: right;
+    outline: none;
+  }
+  .param-value-input:focus { border-color: var(--accent); }
+
+  .iface-footer {
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .apply-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    margin-left: auto;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .apply-status.ok { color: var(--green); }
+  .apply-status.err { color: var(--red); }
+  .apply-status.pending { color: var(--yellow); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 10px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .toolbar-title {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text2);
+    flex: 1;
+  }
+
+  /* Toast */
+  #toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    padding: 10px 16px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    animation: toastIn 0.3s ease;
+    max-width: 320px;
+  }
+  .toast.success { border-left-color: var(--green); }
+  .toast.error { border-left-color: var(--red); }
+  .toast.warning { border-left-color: var(--orange); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Label edit modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 24px;
+    width: 320px;
+    animation: slideUp 0.3s ease;
+  }
+  .modal-title {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .iface-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Inline edit for custom label */
+  .label-edit-input {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--cond);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 2px;
+    width: 120px;
+    outline: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="8" width="28" height="16" rx="2" stroke="#00d4ff" stroke-width="1.5"/>
+        <circle cx="8" cy="16" r="2.5" stroke="#00d4ff" stroke-width="1.5"/>
+        <circle cx="24" cy="16" r="2.5" stroke="#00d4ff" stroke-width="1.5"/>
+        <path d="M11 16 L21 16" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="2 2"/>
+        <path d="M2 12 L0 12 M2 20 L0 20" stroke="#00d4ff" stroke-width="1.5"/>
+        <path d="M30 12 L32 12 M30 20 L32 20" stroke="#00d4ff" stroke-width="1.5"/>
+        <path d="M13 13 L14 16 L16 13 L18 19 L19 16" stroke="#ff8c00" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">WAN Control</div>
+      <div class="logo-sub">TC QDISC MANAGER</div>
+    </div>
+  </div>
+  <div class="header-status">
+    <div id="header-conn-dot" class="status-dot"></div>
+    <span id="header-conn-text">IDLE</span>
+  </div>
+</header>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-header">
+      <div class="setup-title">Configure Emulators</div>
+      <div class="setup-subtitle">// ESTABLISH SSH CONNECTIONS TO WAN EMULATOR HOSTS</div>
+    </div>
+    <div class="setup-body">
+      <div class="form-group">
+        <label>Number of WAN Emulator Hosts</label>
+        <div class="count-selector" id="count-selector">
+          <button class="count-btn selected" data-n="1">1</button>
+          <button class="count-btn" data-n="2">2</button>
+          <button class="count-btn" data-n="3">3</button>
+          <button class="count-btn" data-n="4">4</button>
+          <button class="count-btn" data-n="5">5</button>
+          <button class="count-btn" data-n="6">6</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="host-forms"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="connect-btn" onclick="connectAll()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 16 16"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Connect & Load Interfaces
+        </button>
+      </div>
+
+      <div id="connect-error" style="display:none; margin-top:12px; font-family:var(--mono); font-size:12px; color:var(--red); padding:8px 12px; background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3); border-radius:3px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <main>
+    <div class="toolbar">
+      <span class="toolbar-title">Interface Control</span>
+      <button class="btn btn-ghost btn-sm" onclick="showSetup()">⟵ Reconfigure</button>
+      <button class="btn btn-secondary btn-sm" onclick="refreshAll()">↻ Refresh All</button>
+      <button class="btn btn-sm" style="background:rgba(255,68,68,0.15);color:var(--red);border:1px solid rgba(255,68,68,0.3);" onclick="clearAllInterfaces()">✕ Clear All TC</button>
+    </div>
+    <div id="hosts-container"></div>
+  </main>
+</div>
+
+<!-- Label edit modal -->
+<div class="modal-overlay" id="label-modal">
+  <div class="modal">
+    <div class="modal-title">Set Interface Label</div>
+    <div class="form-group">
+      <label>Custom Label</label>
+      <input type="text" id="label-modal-input" placeholder="e.g. WAN Link A" maxlength="32">
+    </div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-primary btn-sm" onclick="saveLabelModal()">Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeLabelModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = '';  // same origin
+
+let hostCount = 1;
+let hosts = [];  // { id, host, port, username, password, label }
+let state = {};  // { [hostId]: { interfaces: [...], hidden: Set, labels: {}, status: '' } }
+let labelModalTarget = null; // { hostId, ifaceName }
+
+// Init host count selector
+document.querySelectorAll('.count-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    hostCount = parseInt(btn.dataset.n);
+    renderHostForms();
+  });
+});
+
+function renderHostForms() {
+  const container = document.getElementById('host-forms');
+  container.innerHTML = '';
+  for (let i = 0; i < hostCount; i++) {
+    const saved = hosts[i] || {};
+    container.innerHTML += `
+      <div class="host-block">
+        <div class="host-block-title">
+          <span class="host-num">${i+1}</span>
+          Emulator Host ${i+1}
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin:0">
+            <label>Hostname / IP</label>
+            <input type="text" id="h${i}-host" placeholder="192.168.1.100" value="${saved.host||''}">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>SSH Port</label>
+            <input type="number" id="h${i}-port" placeholder="22" value="${saved.port||22}" style="width:100%">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin:0">
+            <label>Username</label>
+            <input type="text" id="h${i}-user" placeholder="ubuntu" value="${saved.username||''}">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Password</label>
+            <input type="password" id="h${i}-pass" placeholder="••••••••" value="${saved.password||''}">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Display Name (optional)</label>
+          <input type="text" id="h${i}-label" placeholder="e.g. Lab WAN Emulator 1" value="${saved.label||''}">
+        </div>
+      </div>
+    `;
+  }
+}
+
+renderHostForms();
+
+async function connectAll() {
+  const btn = document.getElementById('connect-btn');
+  const errDiv = document.getElementById('connect-error');
+  errDiv.style.display = 'none';
+  
+  hosts = [];
+  for (let i = 0; i < hostCount; i++) {
+    hosts.push({
+      id: `host-${i}`,
+      host: document.getElementById(`h${i}-host`).value.trim(),
+      port: parseInt(document.getElementById(`h${i}-port`).value) || 22,
+      username: document.getElementById(`h${i}-user`).value.trim(),
+      password: document.getElementById(`h${i}-pass`).value,
+      label: document.getElementById(`h${i}-label`).value.trim()
+    });
+  }
+
+  // Validate
+  for (const h of hosts) {
+    if (!h.host || !h.username || !h.password) {
+      errDiv.textContent = `Host ${h.id}: Please fill in hostname, username, and password.`;
+      errDiv.style.display = 'block';
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Connecting...';
+
+  const errors = [];
+  for (const h of hosts) {
+    try {
+      const res = await apiFetch('/api/connect', 'POST', {
+        id: h.id, host: h.host, port: h.port, username: h.username, password: h.password
+      });
+      if (!res.success) errors.push(`${h.host}: ${res.error}`);
+    } catch (e) {
+      errors.push(`${h.host}: ${e.message}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    errDiv.textContent = errors.join('\n');
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = 'Connect & Load Interfaces';
+    return;
+  }
+
+  // Load interfaces for all
+  for (const h of hosts) {
+    state[h.id] = { interfaces: [], hidden: new Set(), labels: {}, status: 'connected' };
+  }
+
+  await refreshAll();
+
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  updateHeaderStatus();
+
+  btn.disabled = false;
+  btn.innerHTML = 'Connect & Load Interfaces';
+  toast('All hosts connected', 'success');
+}
+
+async function refreshAll() {
+  for (const h of hosts) {
+    await loadInterfaces(h.id);
+  }
+  renderDashboard();
+}
+
+async function loadInterfaces(hostId) {
+  try {
+    const res = await apiFetch(`/api/interfaces/${hostId}`, 'GET');
+    if (state[hostId]) {
+      // Preserve existing hidden/labels
+      state[hostId].interfaces = res.interfaces;
+      state[hostId].status = 'connected';
+    }
+  } catch (e) {
+    if (state[hostId]) state[hostId].status = 'error';
+    toast(`Failed to load interfaces: ${e.message}`, 'error');
+  }
+}
+
+function renderDashboard() {
+  const container = document.getElementById('hosts-container');
+  container.innerHTML = '';
+
+  for (const h of hosts) {
+    const s = state[h.id];
+    if (!s) continue;
+    
+    const hostLabel = h.label || h.host;
+    const statusClass = s.status === 'connected' ? 'connected' : 'disconnected';
+    const statusText = s.status === 'connected' ? '● CONNECTED' : '● DISCONNECTED';
+
+    let ifacesHtml = '';
+    for (const iface of s.interfaces) {
+      const hidden = s.hidden.has(iface.name);
+      const label = s.labels[iface.name] || '';
+      ifacesHtml += renderIfaceCard(h.id, iface, hidden, label);
+    }
+
+    container.innerHTML += `
+      <div class="host-section" id="host-section-${h.id}">
+        <div class="host-section-header">
+          <div class="host-label">${escHtml(hostLabel)}</div>
+          <div class="host-ip-badge">${escHtml(h.host)}</div>
+          <div class="conn-indicator ${statusClass}">${statusText}</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadInterfaces('${h.id}').then(renderDashboard)" style="margin-left:8px">↻</button>
+        </div>
+        <div class="iface-grid" id="iface-grid-${h.id}">
+          ${ifacesHtml || '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:12px">No interfaces found</div>'}
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderIfaceCard(hostId, iface, hidden, label) {
+  const labelDisplay = label 
+    ? `<span class="iface-custom-label" title="Click to edit label" onclick="openLabelModal('${hostId}','${escHtml(iface.name)}')">${escHtml(label)}</span>`
+    : `<span class="iface-custom-label empty" title="Click to add label" onclick="openLabelModal('${hostId}','${escHtml(iface.name)}')">[add label]</span>`;
+
+  const hiddenClass = hidden ? 'hidden-iface' : '';
+
+  // Param ranges
+  const maxBw = Math.max(100000, (iface.bandwidth || 0) * 2);
+
+  return `
+    <div class="iface-card ${hiddenClass}" id="card-${hostId}-${iface.name}">
+      <div class="iface-header">
+        <span class="iface-name">${escHtml(iface.name)}</span>
+        <span class="iface-ip">${escHtml(iface.ip || '')}</span>
+        ${labelDisplay}
+        <div class="iface-actions">
+          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;" title="${hidden ? 'Show' : 'Hide'}" onclick="toggleHide('${hostId}','${iface.name}')">
+            ${hidden ? '👁 Show' : '⊘ Hide'}
+          </button>
+        </div>
+      </div>
+      <div class="iface-body">
+        ${renderParam(hostId, iface.name, 'loss', 'Loss', iface.loss, 0, 100, 0.1, '%', 'loss')}
+        ${renderParam(hostId, iface.name, 'latency', 'Latency', iface.latency, 0, 2000, 1, 'ms', 'latency')}
+        ${renderParam(hostId, iface.name, 'jitter', 'Jitter', iface.jitter, 0, 500, 1, 'ms', 'jitter')}
+        ${renderParam(hostId, iface.name, 'bandwidth', 'Bandwidth', iface.bandwidth, 0, maxBw, 100, 'kbps', 'bandwidth')}
+      </div>
+      <div class="iface-footer">
+        <button class="btn btn-green" onclick="applyIface('${hostId}','${iface.name}')">▶ Apply</button>
+        <button class="btn btn-danger" onclick="clearIface('${hostId}','${iface.name}')">✕ Clear</button>
+        <span class="apply-status" id="status-${hostId}-${iface.name}"></span>
+      </div>
+    </div>
+  `;
+}
+
+function renderParam(hostId, ifaceName, param, label, value, min, max, step, unit, cls) {
+  const safeId = `${hostId}-${ifaceName}-${param}`;
+  const v = value || 0;
+  return `
+    <div class="param-row">
+      <span class="param-label">${label}</span>
+      <input type="range" class="${cls}" id="range-${safeId}" 
+             min="${min}" max="${max}" step="${step}" value="${v}"
+             oninput="syncParam('${safeId}', this.value)">
+      <input type="text" class="param-value-input" id="val-${safeId}" 
+             value="${v}"
+             onchange="syncParamFromText('${safeId}', this.value, ${min}, ${max})">
+    </div>
+  `;
+}
+
+function syncParam(safeId, value) {
+  document.getElementById(`val-${safeId}`).value = parseFloat(value);
+}
+
+function syncParamFromText(safeId, value, min, max) {
+  let v = parseFloat(value);
+  if (isNaN(v)) v = min;
+  v = Math.min(max, Math.max(min, v));
+  document.getElementById(`range-${safeId}`).value = v;
+  document.getElementById(`val-${safeId}`).value = v;
+}
+
+function getIfaceValues(hostId, ifaceName) {
+  const g = (p) => {
+    const el = document.getElementById(`val-${hostId}-${ifaceName}-${p}`);
+    return el ? parseFloat(el.value) || 0 : 0;
+  };
+  return {
+    loss: g('loss'),
+    latency: g('latency'),
+    jitter: g('jitter'),
+    bandwidth: g('bandwidth')
+  };
+}
+
+async function applyIface(hostId, ifaceName) {
+  const card = document.getElementById(`card-${hostId}-${ifaceName}`);
+  const statusEl = document.getElementById(`status-${hostId}-${ifaceName}`);
+  const vals = getIfaceValues(hostId, ifaceName);
+
+  card.classList.add('applying');
+  statusEl.textContent = '⏳ applying...';
+  statusEl.className = 'apply-status pending';
+
+  try {
+    const res = await apiFetch('/api/apply', 'POST', {
+      id: hostId, iface: ifaceName, ...vals
+    });
+    card.classList.remove('applying');
+    card.classList.add('applied');
+    statusEl.textContent = '✓ applied';
+    statusEl.className = 'apply-status ok';
+    setTimeout(() => {
+      card.classList.remove('applied');
+      statusEl.textContent = '';
+    }, 3000);
+    toast(`Applied to ${ifaceName}`, 'success');
+  } catch (e) {
+    card.classList.remove('applying');
+    statusEl.textContent = '✗ error';
+    statusEl.className = 'apply-status err';
+    toast(`Apply failed: ${e.message}`, 'error');
+  }
+}
+
+async function clearIface(hostId, ifaceName) {
+  const statusEl = document.getElementById(`status-${hostId}-${ifaceName}`);
+  statusEl.textContent = '⏳ clearing...';
+  statusEl.className = 'apply-status pending';
+  try {
+    await apiFetch('/api/clear', 'POST', { id: hostId, iface: ifaceName });
+    // Reset all values to 0
+    ['loss','latency','jitter','bandwidth'].forEach(p => {
+      const safeId = `${hostId}-${ifaceName}-${p}`;
+      const r = document.getElementById(`range-${safeId}`);
+      const v = document.getElementById(`val-${safeId}`);
+      if (r) r.value = 0;
+      if (v) v.value = 0;
+    });
+    statusEl.textContent = '✓ cleared';
+    statusEl.className = 'apply-status ok';
+    setTimeout(() => statusEl.textContent = '', 3000);
+    toast(`Cleared ${ifaceName}`, 'success');
+  } catch (e) {
+    statusEl.textContent = '✗ error';
+    statusEl.className = 'apply-status err';
+    toast(`Clear failed: ${e.message}`, 'error');
+  }
+}
+
+async function clearAllInterfaces() {
+  if (!confirm('Clear ALL tc settings on ALL visible interfaces?')) return;
+  for (const h of hosts) {
+    const s = state[h.id];
+    if (!s) continue;
+    for (const iface of s.interfaces) {
+      if (!s.hidden.has(iface.name)) {
+        await clearIface(h.id, iface.name);
+      }
+    }
+  }
+}
+
+function toggleHide(hostId, ifaceName) {
+  const s = state[hostId];
+  if (!s) return;
+  if (s.hidden.has(ifaceName)) s.hidden.delete(ifaceName);
+  else s.hidden.add(ifaceName);
+  const card = document.getElementById(`card-${hostId}-${ifaceName}`);
+  if (card) {
+    card.classList.toggle('hidden-iface', s.hidden.has(ifaceName));
+    const btn = card.querySelector('.iface-actions button');
+    if (btn) btn.innerHTML = s.hidden.has(ifaceName) ? '👁 Show' : '⊘ Hide';
+  }
+}
+
+function openLabelModal(hostId, ifaceName) {
+  labelModalTarget = { hostId, ifaceName };
+  const s = state[hostId];
+  const current = s && s.labels[ifaceName] ? s.labels[ifaceName] : '';
+  document.getElementById('label-modal-input').value = current;
+  document.getElementById('label-modal').classList.add('open');
+  setTimeout(() => document.getElementById('label-modal-input').focus(), 100);
+}
+
+function saveLabelModal() {
+  if (!labelModalTarget) return;
+  const { hostId, ifaceName } = labelModalTarget;
+  const newLabel = document.getElementById('label-modal-input').value.trim();
+  if (state[hostId]) {
+    state[hostId].labels[ifaceName] = newLabel;
+    // Update the label span in DOM
+    const card = document.getElementById(`card-${hostId}-${ifaceName}`);
+    if (card) {
+      const span = card.querySelector('.iface-custom-label');
+      if (span) {
+        span.textContent = newLabel || '[add label]';
+        span.className = 'iface-custom-label' + (newLabel ? '' : ' empty');
+      }
+    }
+  }
+  closeLabelModal();
+}
+
+function closeLabelModal() {
+  document.getElementById('label-modal').classList.remove('open');
+  labelModalTarget = null;
+}
+
+document.getElementById('label-modal-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveLabelModal();
+  if (e.key === 'Escape') closeLabelModal();
+});
+
+function showSetup() {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+}
+
+function updateHeaderStatus() {
+  const dot = document.getElementById('header-conn-dot');
+  const txt = document.getElementById('header-conn-text');
+  const total = hosts.length;
+  const connected = Object.values(state).filter(s => s.status === 'connected').length;
+  if (connected === total && total > 0) {
+    dot.className = 'status-dot active';
+    txt.textContent = `${connected}/${total} HOSTS`;
+  } else if (connected > 0) {
+    dot.className = 'status-dot';
+    txt.textContent = `${connected}/${total} HOSTS`;
+  } else {
+    dot.className = 'status-dot error';
+    txt.textContent = 'DISCONNECTED';
+  }
+}
+
+async function apiFetch(url, method, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(20px)';
+    t.style.transition = 'all 0.3s';
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

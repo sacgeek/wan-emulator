@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  wan-control:
+    build: .
+    container_name: wan-emulator-control
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+    # Optional: run as non-root
+    # user: "node"
