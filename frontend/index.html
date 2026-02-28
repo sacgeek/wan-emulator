@@ -966,6 +966,84 @@ let hosts = [];  // { id, host, port, username, password, label }
 let state = {};  // { [hostId]: { interfaces: [...], hidden: Set, labels: {}, status: '' } }
 let labelModalTarget = null; // { hostId, ifaceName }
 
+// ── Persistence ────────────────────────────────────────────────────────────
+
+async function saveSettings() {
+  const settings = {
+    hostCount,
+    hosts: hosts.map(h => ({
+      id: h.id,
+      host: h.host,
+      port: h.port,
+      username: h.username,
+      label: h.label,
+      sudoSameAsPassword: h.sudoSameAsPassword
+      // passwords are intentionally omitted from saved settings
+    })),
+    state: Object.fromEntries(
+      Object.entries(state).map(([hostId, s]) => [hostId, {
+        hidden: Array.from(s.hidden),
+        labels: s.labels
+      }])
+    )
+  };
+  try {
+    await apiFetch('/api/settings', 'POST', { settings });
+  } catch(e) {
+    console.warn('Could not save settings:', e.message);
+  }
+}
+
+async function restoreSettings() {
+  try {
+    const res = await apiFetch('/api/settings', 'GET');
+    if (!res.settings) return false;
+    const s = res.settings;
+
+    // Restore host count selector
+    if (s.hostCount) {
+      hostCount = s.hostCount;
+      document.querySelectorAll('.count-btn').forEach(b => {
+        b.classList.toggle('selected', parseInt(b.dataset.n) === hostCount);
+      });
+    }
+
+    // Restore host list (without passwords — user must re-enter)
+    if (s.hosts && s.hosts.length > 0) {
+      hosts = s.hosts.map(h => ({ ...h, password: '', sudoPassword: '' }));
+      renderHostForms();
+      // Pre-fill form fields with saved non-sensitive values
+      hosts.forEach((h, i) => {
+        const hostEl = document.getElementById(`h${i}-host`);
+        const portEl = document.getElementById(`h${i}-port`);
+        const userEl = document.getElementById(`h${i}-user`);
+        const labelEl = document.getElementById(`h${i}-label`);
+        const sudoSameEl = document.getElementById(`h${i}-sudo-same`);
+        if (hostEl) hostEl.value = h.host || '';
+        if (portEl) portEl.value = h.port || 22;
+        if (userEl) userEl.value = h.username || '';
+        if (labelEl) labelEl.value = h.label || '';
+        if (sudoSameEl) {
+          sudoSameEl.checked = h.sudoSameAsPassword !== false;
+          toggleSudoField(i);
+        }
+      });
+      return true;
+    }
+  } catch(e) {
+    console.warn('Could not restore settings:', e.message);
+  }
+  return false;
+}
+
+function restoreStateForHost(hostId, savedState) {
+  if (!savedState) return;
+  if (state[hostId]) {
+    if (savedState.hidden) state[hostId].hidden = new Set(savedState.hidden);
+    if (savedState.labels) state[hostId].labels = savedState.labels;
+  }
+}
+
 // Init host count selector
 document.querySelectorAll('.count-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -976,7 +1054,11 @@ document.querySelectorAll('.count-btn').forEach(btn => {
   });
 });
 
-function renderHostForms() {
+// Restore saved settings on load (passwords must be re-entered)
+restoreSettings().then(restored => {
+  if (!restored) renderHostForms();
+});
+
   const container = document.getElementById('host-forms');
   container.innerHTML = '';
   for (let i = 0; i < hostCount; i++) {
@@ -1095,12 +1177,24 @@ async function connectAll() {
     return;
   }
 
-  // Load interfaces for all
+  // Load interfaces for all, restoring any saved hidden/labels state
+  const savedSettings = await apiFetch('/api/settings', 'GET').catch(() => ({ settings: null }));
+  const savedState = savedSettings.settings && savedSettings.settings.state ? savedSettings.settings.state : {};
+
   for (const h of hosts) {
-    state[h.id] = { interfaces: [], hidden: new Set(), labels: {}, status: 'connected' };
+    const prev = savedState[h.id] || {};
+    state[h.id] = {
+      interfaces: [],
+      hidden: new Set(prev.hidden || []),
+      labels: prev.labels || {},
+      status: 'connected'
+    };
   }
 
   await refreshAll();
+
+  // Save settings now that we have valid hosts
+  await saveSettings();
 
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
@@ -1374,6 +1468,7 @@ function toggleHide(hostId, ifaceName) {
       placeholder.remove();
     }
   }
+  saveSettings();
 }
 
 function openLabelModal(hostId, ifaceName) {
@@ -1404,6 +1499,7 @@ function saveLabelModal() {
     }
   }
   closeLabelModal();
+  saveSettings();
 }
 
 function closeLabelModal() {

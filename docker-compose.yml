@@ -2,10 +2,17 @@ version: '3.8'
 
 services:
   wan-control:
-    image: ghcr.io/sacgeek/wan-emulator-control:latest
+    image: ghcr.io/YOUR_GITHUB_USERNAME/wan-emulator-control:latest
     container_name: wan-emulator-control
     ports:
       - "3000:3000"
     restart: unless-stopped
     environment:
       - PORT=3000
+      - DATA_DIR=/app/data
+    volumes:
+      - wan-data:/app/data
+
+volumes:
+  wan-data:
+    driver: local

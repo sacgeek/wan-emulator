@@ -1,11 +1,68 @@
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('ssh2');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('/app/frontend'));
+
+// Persistent data directory (mounted as a Docker volume)
+const DATA_DIR = process.env.DATA_DIR || '/app/data';
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Load settings from disk
+function loadSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Failed to load settings:', e.message);
+  }
+  return null;
+}
+
+// Save settings to disk
+function saveSettings(settings) {
+  try {
+    // Strip passwords before saving
+    const safe = { ...settings };
+    if (safe.hosts) {
+      safe.hosts = safe.hosts.map(h => ({
+        ...h,
+        password: '',
+        sudoPassword: ''
+      }));
+    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(safe, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('Failed to save settings:', e.message);
+    return false;
+  }
+}
+
+// GET saved settings
+app.get('/api/settings', (req, res) => {
+  const settings = loadSettings();
+  res.json({ settings });
+});
+
+// POST save settings
+app.post('/api/settings', (req, res) => {
+  const { settings } = req.body;
+  if (!settings) return res.status(400).json({ error: 'No settings provided' });
+  const ok = saveSettings(settings);
+  res.json({ success: ok });
+});
 
 // In-memory store of SSH connections
 const connections = {};
