@@ -1011,29 +1011,31 @@ async function restoreSettings() {
     // Restore host list (without passwords — user must re-enter)
     if (s.hosts && s.hosts.length > 0) {
       hosts = s.hosts.map(h => ({ ...h, password: '', sudoPassword: '' }));
-      renderHostForms();
-      // Pre-fill form fields with saved non-sensitive values
-      hosts.forEach((h, i) => {
-        const hostEl = document.getElementById(`h${i}-host`);
-        const portEl = document.getElementById(`h${i}-port`);
-        const userEl = document.getElementById(`h${i}-user`);
-        const labelEl = document.getElementById(`h${i}-label`);
-        const sudoSameEl = document.getElementById(`h${i}-sudo-same`);
-        if (hostEl) hostEl.value = h.host || '';
-        if (portEl) portEl.value = h.port || 22;
-        if (userEl) userEl.value = h.username || '';
-        if (labelEl) labelEl.value = h.label || '';
-        if (sudoSameEl) {
-          sudoSameEl.checked = h.sudoSameAsPassword !== false;
-          toggleSudoField(i);
-        }
-      });
       return true;
     }
   } catch(e) {
     console.warn('Could not restore settings:', e.message);
   }
   return false;
+}
+
+function populateRestoredForms() {
+  // Fill in saved non-sensitive values into already-rendered form fields
+  hosts.forEach((h, i) => {
+    const hostEl  = document.getElementById(`h${i}-host`);
+    const portEl  = document.getElementById(`h${i}-port`);
+    const userEl  = document.getElementById(`h${i}-user`);
+    const labelEl = document.getElementById(`h${i}-label`);
+    const sudoSameEl = document.getElementById(`h${i}-sudo-same`);
+    if (hostEl)  hostEl.value  = h.host  || '';
+    if (portEl)  portEl.value  = h.port  || 22;
+    if (userEl)  userEl.value  = h.username || '';
+    if (labelEl) labelEl.value = h.label || '';
+    if (sudoSameEl) {
+      sudoSameEl.checked = h.sudoSameAsPassword !== false;
+      toggleSudoField(i);
+    }
+  });
 }
 
 function restoreStateForHost(hostId, savedState) {
@@ -1055,8 +1057,9 @@ document.querySelectorAll('.count-btn').forEach(btn => {
 });
 
 // Restore saved settings on load (passwords must be re-entered)
-restoreSettings().then(restored => {
-  if (!restored) renderHostForms();
+restoreSettings().finally(() => {
+  renderHostForms();
+  populateRestoredForms();
 });
 
   const container = document.getElementById('host-forms');
